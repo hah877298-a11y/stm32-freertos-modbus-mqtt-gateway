@@ -1,0 +1,28 @@
+# Keil 编译产物
+firmware/Output/
+firmware/Projects/MDK-ARM/Objects/
+firmware/Projects/MDK-ARM/Listings/
+*.o
+*.d
+*.crf
+*.axf
+*.hex
+*.bin
+*.map
+*.lst
+*.lnp
+*.dep
+*.sct
+*.htm
+*.build_log.htm
+
+# Keil 用户界面状态（含个人窗口布局）
+*.uvguix.*
+*.bak
+*.bak[0-9]*
+
+# 编辑器 / 系统
+.vscode/
+.idea/
+Thumbs.db
+desktop.ini

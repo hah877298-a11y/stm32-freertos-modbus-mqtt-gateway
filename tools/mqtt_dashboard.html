@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>工业数据采集网关 · 监视面板</title>
+<script src="https://unpkg.com/mqtt@4.3.7/dist/mqtt.min.js"></script>
+<style>
+  body{margin:0;background:#0e1420;color:#e8eefc;font-family:system-ui,"Microsoft YaHei",sans-serif}
+  header{padding:16px 24px;border-bottom:1px solid #1e2a3d;display:flex;align-items:center;gap:12px}
+  h1{font-size:18px;margin:0;font-weight:600}
+  #dot{width:10px;height:10px;border-radius:50%;background:#c0392b}
+  #state{font-size:13px;color:#8fa3c0}
+  .grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:16px;padding:24px}
+  .card{background:#151d2b;border:1px solid #1e2a3d;border-radius:10px;padding:18px}
+  .k{font-size:13px;color:#8fa3c0;margin-bottom:8px}
+  .v{font-size:34px;font-weight:700;font-variant-numeric:tabular-nums}
+  .u{font-size:15px;color:#8fa3c0;margin-left:4px;font-weight:400}
+  .ok{color:#2ecc71}.bad{color:#e74c3c}.warn{color:#f39c12}
+  .row{display:flex;gap:8px;padding:0 24px 24px}
+  button{background:#1f2c40;color:#e8eefc;border:1px solid #2c3e5a;border-radius:8px;padding:10px 18px;font-size:14px;cursor:pointer}
+  button:hover{background:#28374f}
+  #log{padding:0 24px 24px;font-family:ui-monospace,Consolas,monospace;font-size:12px;color:#7e93b0;max-height:160px;overflow:auto}
+</style>
+</head>
+<body>
+<header><div id="dot"></div><h1>工业数据采集网关</h1><span id="state">连接中…</span></header>
+
+<div class="grid">
+  <div class="card"><div class="k">温度 TEMP</div><div class="v" id="t">--<span class="u">℃</span></div></div>
+  <div class="card"><div class="k">湿度 HUMI</div><div class="v" id="h">--<span class="u">%</span></div></div>
+  <div class="card"><div class="k">振动 VIB</div><div class="v" id="v">--<span class="u">mg</span></div></div>
+  <div class="card"><div class="k">报警 ALARM</div><div class="v" id="a">--</div></div>
+  <div class="card"><div class="k">Modbus 采集</div><div class="v" id="mb">--</div></div>
+  <div class="card"><div class="k">设备在线时长</div><div class="v" id="up">--<span class="u">s</span></div></div>
+</div>
+
+<div class="row">
+  <button onclick="ledOn()">远程点亮 LED0（常亮）</button>
+  <button onclick="ledOff()">恢复 LED0 闪烁</button>
+</div>
+<div id="log"></div>
+
+<script>
+const topic = "stm32/gw01/telemetry", cmd = "stm32/gw01/cmd";
+const node = mqtt.connect("wss://broker.emqx.io:8084/mqtt", {
+  clientId: "pc_dash_" + Math.random().toString(16).slice(2, 8),
+  clean: true, connectTimeout: 8000
+});
+function setState(txt, color){ state.textContent = txt; dot.style.background = color; }
+node.on("connect", () => { setState("已连接 broker.emqx.io", "#2ecc71"); node.subscribe(topic); });
+node.on("reconnect", () => setState("重连中…", "#f39c12"));
+node.on("error", () => setState("连接失败，检查网络", "#e74c3c"));
+node.on("message", (_, buf) => {
+  let d; try { d = JSON.parse(buf.toString()); } catch(e) { return; }
+  t.innerHTML = d.t.toFixed(1) + '<span class="u">℃</span>';
+  h.innerHTML = d.h.toFixed(1) + '<span class="u">%</span>';
+  v.innerHTML = d.vib + '<span class="u">mg</span>';
+  up.innerHTML = d.up + '<span class="u">s</span>';
+  a.textContent = d.alarm ? "报警" : "正常";
+  a.className = "v " + (d.alarm ? "bad" : "ok");
+  mb.textContent = d.mb ? "正常" : "断开";
+  mb.className = "v " + (d.mb ? "ok" : "bad");
+  const line = new Date().toLocaleTimeString("zh-CN") + "  " + buf.toString();
+  log.innerHTML = line + "<br>" + log.innerHTML;
+});
+function send(msg){ node.publish(cmd, msg, { qos: 1 }, e => log.innerHTML = (e ? "发送失败: " + e.message : "已发送 " + msg) + "<br>" + log.innerHTML); }
+function ledOn(){ send('{\"led\":1}'); }
+function ledOff(){ send('{\"led\":0}'); }
+</script>
+</body>
+</html>
