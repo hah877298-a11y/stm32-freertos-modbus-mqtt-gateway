@@ -439,6 +439,11 @@
               <FileType>1</FileType>
               <FilePath>..\..\User\ds18b20.c</FilePath>
             </File>
+            <File>
+              <FileName>can_bsp.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\User\can_bsp.c</FilePath>
+            </File>
           </Files>
         </Group>
         <Group>
@@ -538,6 +543,11 @@
               <FileName>stm32f1xx_hal_i2c.c</FileName>
               <FileType>1</FileType>
               <FilePath>..\..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_i2c.c</FilePath>
+            </File>
+            <File>
+              <FileName>stm32f1xx_hal_can.c</FileName>
+              <FileType>1</FileType>
+              <FilePath>..\..\Drivers\STM32F1xx_HAL_Driver\Src\stm32f1xx_hal_can.c</FilePath>
             </File>
           </Files>
         </Group>

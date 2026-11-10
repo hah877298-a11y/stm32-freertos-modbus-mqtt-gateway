@@ -9,6 +9,7 @@
 #include "gateway_state.h"
 #include "ds18b20.h"
 #include "esp_at.h"
+#include "can_bsp.h"
 #include "stm32f1xx_hal.h"
 #include "lcd.h"
 #include <string.h>
@@ -29,6 +30,9 @@
 
 #define LCD_TASK_STACK       320
 #define LCD_TASK_PRIO        1
+
+#define CAN_TASK_STACK       192
+#define CAN_TASK_PRIO        1
 
 static TaskHandle_t led_handle   = NULL;
 static TaskHandle_t print_handle = NULL;
@@ -496,6 +500,42 @@ static void task_lcd(void *pvParameters)
         vTaskDelay(500);
     }
 }
+/* CAN 回环自测: 每 2 秒发一帧 0x123, 再从接收 FIFO 取回来打印 */
+static void task_can(void *pvParameters)
+{
+    uint8_t  tx[8];
+    uint8_t  rx[8];
+    uint32_t id = 0;
+    uint8_t  n  = 0;
+
+    (void)pvParameters;
+
+    for (;;)
+    {
+        n++;
+        tx[0] = n;
+        tx[1] = 0x11;
+        tx[2] = 0x22;
+        tx[3] = 0x33;
+        tx[4] = 0x44;
+        tx[5] = 0x55;
+        tx[6] = 0x66;
+        tx[7] = 0x77;
+
+        if (can_bsp_send(0x123, tx, 8) == 0 && can_bsp_recv(&id, rx, 8, 100) == 0)
+        {
+            printf("can ok id=%03lX d=%02X %02X %02X %02X %02X %02X %02X %02X\r\n",
+                   (unsigned long)id,
+                   rx[0], rx[1], rx[2], rx[3], rx[4], rx[5], rx[6], rx[7]);
+        }
+        else
+        {
+            printf("can fail\r\n");
+        }
+
+        vTaskDelay(2000);
+    }
+}
 /* 栈溢出时 FreeRTOS 自动调用这里: 点亮 LED1 并停住 */
 void vApplicationStackOverflowHook(TaskHandle_t xTask, char *pcTaskName)
 {
@@ -525,6 +565,7 @@ void app_rtos_start(void)
     printf("ds18b20 %s\r\n", ds18b20_init() ? "found" : "not found");
     modbus_rtu_init();
     esp_at_init();
+    printf("can init=%u (500k loopback)\r\n", (unsigned int)can_bsp_init());
     printf("crc selfcheck=%04X (expect CB05)\r\n", modbus_crc16(test_frame, 6));
 	
     xTaskCreate((TaskFunction_t)task_led,   "led",   LED_TASK_STACK,   NULL, LED_TASK_PRIO,   &led_handle);
@@ -534,6 +575,7 @@ void app_rtos_start(void)
     xTaskCreate((TaskFunction_t)task_i2c,  "i2c", I2C_TASK_STACK, NULL, I2C_TASK_PRIO, NULL);
     xTaskCreate((TaskFunction_t)task_esp,  "esp", 512, NULL, 1, NULL);
     xTaskCreate((TaskFunction_t)task_lcd,  "lcd", LCD_TASK_STACK, NULL, LCD_TASK_PRIO, NULL);   /* 有 printf 浮点, 256 会溢出 */
+    xTaskCreate((TaskFunction_t)task_can,  "can", CAN_TASK_STACK, NULL, CAN_TASK_PRIO, NULL);
     
 	vTaskStartScheduler();      /* 到这里交给调度器, 正常不返回 */
 }
