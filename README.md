@@ -9,9 +9,9 @@
 | 项目 | 说明 |
 |---|---|
 | 主控 | 正点原子 精英 STM32F103ZET6（72 MHz，512 KB Flash / 64 KB RAM） |
-| RTOS | FreeRTOS 10.x，7 个任务，heap_4，16 KB 堆 |
+| RTOS | FreeRTOS 10.x，8 个任务，heap_4，16 KB 堆 |
 | 工具链 | Keil MDK（ARMCC v5.06），可直接打开 `firmware/Projects/MDK-ARM/atk_f103.uvprojx` |
-| 无 RTOS 依赖 | 全部应用代码在 `firmware/User/`，HAL 只用到 GPIO / USART / FSMC |
+| 无 RTOS 依赖 | 全部应用代码在 `firmware/User/`，HAL 只用到 GPIO / USART / FSMC / CAN |
 
 ## 功能
 
@@ -96,6 +96,7 @@ PC10 / PC11 位于开发板 P2 排针，位置见下图：
 │  │  ├─ esp_at.c[.h]            UART4 驱动：中断接收 + 环形缓冲
 │  │  ├─ i2c_bsp.c[.h]           软件 I2C + 总线扫描
 │  │  ├─ ds18b20.c[.h]           单总线时序 + CRC8
+│  │  ├─ can_bsp.c[.h]           bxCAN 初始化与收发（回环自测）
 │  │  └─ main.c / stm32f1xx_it.c 初始化与中断
 │  ├─ Drivers/                   CMSIS、HAL、BSP（正点原子 LCD/LED/KEY 驱动）
 │  ├─ Middlewares/               FreeRTOS 内核与 heap_4
@@ -162,7 +163,7 @@ mpu id=0x70
 rtos tick=1
 mb ok t=25.0 h=50.0 st=1
 gw mb=1 t=25.6 h=50.0 vib=47 alarm=0
-heap=6136 stack=94/186/170
+heap=5256 stack=94/186/170
 pub: {"t":25.6,"h":50.0,"vib":47,"alarm":0,"mb":1,"up":596}
 ```
 
